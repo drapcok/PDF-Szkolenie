@@ -1006,11 +1006,22 @@ const plotW = W - margin.left - margin.right;
 const plotH = H - margin.top - margin.bottom;
 
 const allTs = RAW.map(d=>d.resolved_ts);
-const xMin = Math.min(...allTs), xMax = Math.max(...allTs);
+const GLOBAL_X_MIN = Math.min(...allTs), GLOBAL_X_MAX = Math.max(...allTs);
 
-function fmtDate(ts){
+function fmtDate(ts, spanMs){
   const d = new Date(ts);
   const months = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
+  const daySpan = spanMs / 86400000;
+  if (daySpan <= 3){
+    // Very short range: show day + hour so ticks aren't all identical.
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    return d.getDate() + ' ' + months[d.getMonth()] + ' ' + hh + ':' + mm;
+  }
+  if (daySpan <= 120){
+    // Days to ~4 months: show day + month, year only when it changes across the range.
+    return d.getDate() + ' ' + months[d.getMonth()];
+  }
   return months[d.getMonth()] + ' ' + d.getFullYear();
 }
 
@@ -1039,6 +1050,24 @@ function draw(){
   // Stats are always grounded in COMPLETED data only, regardless of the cancelled toggle.
   const visibleCompleted = visible.filter(d => d.statusGroup === 'completed');
 
+  // Resize the X axis to the currently visible data (date range, filters, hidden outliers)
+  // so points always spread across the full plot width instead of clustering in a slice.
+  let xMin, xMax;
+  if (visible.length > 0){
+    const visTs = visible.map(d=>d.resolved_ts);
+    xMin = Math.min(...visTs);
+    xMax = Math.max(...visTs);
+  } else {
+    xMin = GLOBAL_X_MIN;
+    xMax = GLOBAL_X_MAX;
+  }
+  if (xMax === xMin){
+    // Single-day (or single-point) view: pad so the axis isn't degenerate.
+    const pad = 12 * 60 * 60 * 1000; // 12h either side
+    xMin -= pad;
+    xMax += pad;
+  }
+
   const yMaxRaw = visible.length ? Math.max(...visible.map(d=>d.lead)) : 10;
   const yMax = Math.max(5, yMaxRaw * 1.08);
 
@@ -1062,7 +1091,7 @@ function draw(){
     const x = xScale(ts);
     el('line', {x1:x, x2:x, y1:0, y2:plotH, class:'grid'}, root);
     const t = el('text', {x:x, y: plotH+18, class:'axis-label', 'text-anchor':'middle'}, root);
-    t.textContent = fmtDate(ts);
+    t.textContent = fmtDate(ts, xMax - xMin);
   }
   el('text', {x: plotW/2, y: plotH + 38, class:'axis-label', 'text-anchor':'middle'}, root).textContent = 'Data ukończenia zgłoszenia';
 
