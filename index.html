@@ -2,338 +2,511 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lead Time — analiza dostarczania FSI</title>
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Text:wght@400;500;600;700&family=Roboto:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #0f1115;
-    --panel: #171a21;
-    --panel-2: #1e222b;
-    --border: #2a2f3a;
-    --text: #e8eaed;
-    --text-dim: #9aa1ac;
-    --accent: #5b8cff;
-    --green: #37c977;
-    --orange: #f5a524;
-    --red: #f2495c;
-    --purple: #b47ef0;
-    --gray: #6b7280;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    /* ---- Surfaces (Material dark elevation tints) ---- */
+    --bg: #0e1013;
+    --surface-0: #131519;
+    --surface-1: #1a1d23;
+    --surface-2: #21252c;
+    --surface-3: #282d36;
+    --outline: #33383f;
+    --outline-soft: #262a31;
+
+    /* ---- Text ---- */
+    --on-surface: #e3e3e6;
+    --on-surface-var: #9aa0a8;
+    --on-surface-faint: #6b7178;
+
+    /* ---- Brand / accent (Google-blue family) ---- */
+    --primary: #8ab4f8;
+    --primary-strong: #669df6;
+    --on-primary: #062e6f;
+    --primary-container: #1a3556;
+
+    /* ---- Data-encoding palette (kept distinct from brand blue) ---- */
+    --sp-low: #57d38c;
+    --sp-mid: #f2b84b;
+    --sp-high: #f2735c;
+    --sp-other: #c58af9;
+    --sp-none: #7c828b;
+
+    --success: #57d38c;
+    --warn: #f2b84b;
+    --error: #f2735c;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
+
+    --shadow-1: 0 1px 2px rgba(0,0,0,0.35), 0 1px 3px 1px rgba(0,0,0,0.2);
+    --shadow-2: 0 1px 2px rgba(0,0,0,0.4), 0 2px 6px 2px rgba(0,0,0,0.25);
+
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+
+    font-family: "Google Sans Text", "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   }
-  *{box-sizing:border-box;}
+
+  *{ box-sizing:border-box; }
+  *:focus-visible{
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection{ background: var(--primary-container); color: var(--on-surface); }
+
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background: transparent; }
+  ::-webkit-scrollbar-thumb{ background: var(--outline); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover{ background: #3d434c; background-clip: padding-box; }
+
+  html, body{ height:100%; }
   body{
     margin:0;
-    background: linear-gradient(180deg,#0b0d11,#0f1115 220px);
-    color: var(--text);
-    min-height:100vh;
+    background: var(--bg);
+    color: var(--on-surface);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
   }
+
+  /* ============ HEADER ============ */
   header{
-    padding: 22px 28px 14px 28px;
-    border-bottom: 1px solid var(--border);
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--outline-soft);
+    background: var(--surface-0);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 24px;
+    flex-wrap: wrap;
   }
-  header h1{
-    margin:0 0 4px 0;
+  .header-text h1{
+    margin: 0 0 4px 0;
+    font-family: "Google Sans Text", sans-serif;
     font-size: 20px;
-    font-weight: 650;
-    letter-spacing: -0.2px;
+    font-weight: 700;
+    letter-spacing: -0.1px;
+    color: var(--on-surface);
   }
-  header p{
+  .header-text p{
     margin:0;
-    color: var(--text-dim);
-    font-size: 13px;
+    color: var(--on-surface-var);
+    font-size: 12.5px;
+    max-width: 780px;
+    line-height: 1.55;
   }
+  .header-badges{
+    display:flex;
+    gap:8px;
+    flex-shrink:0;
+  }
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background: var(--surface-2);
+    border: 1px solid var(--outline-soft);
+    color: var(--on-surface-var);
+    font-size: 11.5px;
+    font-weight:500;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+  }
+  .badge .dot{ width:6px; height:6px; border-radius:50%; background: var(--success); }
+
+  /* ============ LAYOUT ============ */
   .layout{
     display:grid;
-    grid-template-columns: 300px 1fr;
-    gap: 18px;
-    padding: 18px;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+    padding: 20px;
     align-items:start;
+    max-width: 1720px;
+    margin: 0 auto;
   }
-  @media (max-width: 900px){
-    .layout{grid-template-columns: 1fr;}
+  @media (max-width: 980px){
+    .layout{ grid-template-columns: 1fr; }
   }
+
+  .sidebar{
+    display:flex;
+    flex-direction:column;
+    gap: 14px;
+  }
+
+  /* ============ PANELS (Material "surface" cards) ============ */
   .panel{
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
+    background: var(--surface-1);
+    border: 1px solid var(--outline-soft);
+    border-radius: var(--radius-lg);
+    padding: 16px 16px 14px;
+    box-shadow: var(--shadow-1);
+    transition: border-color 0.15s var(--ease);
   }
-  .panel + .panel{ margin-top: 14px; }
   .panel h2{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    font-family: "Google Sans Text", sans-serif;
     font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    color: var(--on-surface-var);
     margin: 0 0 12px 0;
-    font-weight: 650;
+    font-weight: 600;
   }
-  .row-actions{
-    display:flex;
-    gap: 8px;
-    margin-bottom: 8px;
+  .panel h2 .h2-icon{
+    width:16px; height:16px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    color: var(--primary);
+    opacity:0.9;
   }
-  .row-actions button{
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    font-size: 11.5px;
-    padding: 5px 9px;
-    border-radius: 6px;
+  .panel h2 .h2-icon svg{ width:100%; height:100%; }
+
+  /* ---- Buttons (Material "text button" / "tonal button") ---- */
+  .row-actions{ display:flex; gap: 8px; margin-bottom: 10px; }
+  .btn{
+    background: var(--surface-2);
+    border: 1px solid var(--outline-soft);
+    color: var(--on-surface-var);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
     cursor:pointer;
+    transition: background 0.12s var(--ease), color 0.12s var(--ease), border-color 0.12s var(--ease), transform 0.08s var(--ease);
   }
-  .row-actions button:hover{ color: var(--text); border-color: #3a4150; }
+  .btn:hover{ color: var(--on-surface); border-color: #3d434c; background: var(--surface-3); }
+  .btn:active{ transform: scale(0.97); }
+  .btn-primary{
+    background: var(--primary-container);
+    border-color: transparent;
+    color: var(--primary);
+  }
+  .btn-primary:hover{ background: #22456f; color: #a9c8fb; }
+
+  /* ---- Checkbox list rows ---- */
   .check-list{
     display:flex;
     flex-direction:column;
-    gap: 2px;
-    max-height: 280px;
+    gap: 1px;
+    max-height: 260px;
     overflow-y:auto;
+    margin: 0 -6px;
   }
   .check-item{
     display:flex;
     align-items:center;
-    gap: 8px;
-    padding: 6px 6px;
-    border-radius: 6px;
+    gap: 10px;
+    padding: 7px 6px;
+    border-radius: var(--radius-sm);
     font-size: 13px;
     cursor:pointer;
     user-select:none;
+    transition: background 0.1s var(--ease);
   }
-  .check-item:hover{ background: var(--panel-2); }
-  .check-item input{ accent-color: var(--accent); width:14px; height:14px; cursor:pointer; flex-shrink:0; }
-  .swatch{
-    width: 10px; height: 10px; border-radius: 3px; flex-shrink:0;
+  .check-item:hover{ background: var(--surface-2); }
+  .check-item input[type="checkbox"]{
+    appearance:none;
+    -webkit-appearance:none;
+    width:16px; height:16px;
+    flex-shrink:0;
+    border: 2px solid var(--on-surface-faint);
+    border-radius: 4px;
+    cursor:pointer;
+    position:relative;
+    transition: background 0.12s var(--ease), border-color 0.12s var(--ease);
   }
-  .shape-icon{ width:16px; height:16px; flex-shrink:0; }
-  .check-item .label{ flex:1; }
-  .check-item .count{ color: var(--text-dim); font-size: 11.5px; }
+  .check-item input[type="checkbox"]:checked{
+    background: var(--primary);
+    border-color: var(--primary);
+  }
+  .check-item input[type="checkbox"]:checked::after{
+    content:"";
+    position:absolute;
+    left:3px; top:0px;
+    width:4px; height:8px;
+    border: solid var(--on-primary);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .swatch{ width: 10px; height: 10px; border-radius: 3px; flex-shrink:0; }
+  .shape-icon{ width:16px; height:16px; flex-shrink:0; opacity:0.92; }
+  .check-item .label{ flex:1; color: var(--on-surface); }
+  .check-item .count{
+    color: var(--on-surface-faint);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    font-family: "Roboto Mono", monospace;
+  }
+
+  /* ---- Stat toggle rows ---- */
   .stat-line{
-    display:flex; align-items:center; gap:8px;
-    padding: 7px 6px; border-radius:6px; font-size: 13px;
+    display:flex; align-items:center; gap:10px;
+    padding: 7px 6px; border-radius: var(--radius-sm); font-size: 13px;
+    cursor:pointer;
+    transition: background 0.1s var(--ease);
   }
-  .stat-line input{ accent-color: var(--accent); width:14px; height:14px; cursor:pointer; }
-  .stat-line .dash{
-    width: 18px; height: 0; border-top: 2px dashed currentColor;
+  .stat-line:hover{ background: var(--surface-2); }
+  .stat-line input{ appearance:none; -webkit-appearance:none; width:16px; height:16px; flex-shrink:0; border: 2px solid var(--on-surface-faint); border-radius: 4px; cursor:pointer; position:relative; transition: background 0.12s var(--ease), border-color 0.12s var(--ease);}
+  .stat-line input:checked{ background: currentColor; border-color: currentColor; }
+  .stat-line input:checked::after{
+    content:"";
+    position:absolute; left:3px; top:0px;
+    width:4px; height:8px;
+    border: solid var(--surface-0);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
   }
+  .stat-line .dash{ width: 16px; height: 0; border-top: 2.5px dashed currentColor; flex-shrink:0; }
+  .stat-line .lbl{ color: var(--on-surface); }
+
+  /* ============ CHART AREA ============ */
   .chart-wrap{
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px 10px 4px 4px;
+    background: var(--surface-1);
+    border: 1px solid var(--outline-soft);
+    border-radius: var(--radius-lg);
+    padding: 14px 14px 6px;
+    box-shadow: var(--shadow-1);
     position: relative;
   }
   svg{ width:100%; height:auto; display:block; }
-  .axis text{ fill: var(--text-dim); font-size: 11px; }
-  .axis path, .axis line{ stroke: var(--border); }
-  .grid line{ stroke: var(--border); stroke-opacity: 0.5; }
-  .axis-label{ fill: var(--text-dim); font-size: 12px; }
-  .pt{
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-  .pt:hover{ stroke: white; stroke-width: 1.6px; }
-  .link-line{
-    pointer-events:none;
-  }
+  .axis text{ fill: var(--on-surface-var); font-size: 11px; }
+  .grid line{ stroke: var(--outline-soft); stroke-opacity: 0.7; }
+  .axis-label{ fill: var(--on-surface-var); font-size: 11.5px; font-family: "Roboto", sans-serif; }
+  .pt{ cursor: pointer; transition: opacity 0.15s var(--ease); }
+  .pt:hover{ stroke: #fff; stroke-width: 1.6px; }
+  .link-line{ pointer-events:none; }
   .stat-label-text{
     font-size: 10.5px;
     font-weight: 600;
+    font-family: "Roboto Mono", monospace;
     paint-order: stroke;
-    stroke: var(--bg);
+    stroke: var(--surface-1);
     stroke-width: 3px;
   }
+
   #tooltip{
     position: fixed;
     pointer-events:none;
-    background: #22262f;
-    border: 1px solid #333947;
-    border-radius: 8px;
-    padding: 10px 12px;
+    background: var(--surface-3);
+    border: 1px solid #3d434c;
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
     font-size: 12.5px;
-    color: var(--text);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    color: var(--on-surface);
+    box-shadow: var(--shadow-2);
     display:none;
     z-index: 50;
-    min-width: 190px;
+    min-width: 200px;
   }
-  #tooltip .tt-key{ font-weight:700; font-size: 13.5px; margin-bottom:4px; color: var(--accent); }
-  #tooltip .tt-row{ display:flex; justify-content:space-between; gap:14px; color: var(--text-dim); }
-  #tooltip .tt-row b{ color: var(--text); font-weight:600; }
+  #tooltip .tt-key{ font-weight:700; font-size: 14px; margin-bottom:6px; color: var(--primary); font-family:"Google Sans Text",sans-serif; }
+  #tooltip .tt-row{ display:flex; justify-content:space-between; gap:14px; color: var(--on-surface-var); padding: 1.5px 0; }
+  #tooltip .tt-row b{ color: var(--on-surface); font-weight:600; }
+
   .footbar{
     display:flex; justify-content:space-between; align-items:center;
-    padding: 8px 6px 10px 6px;
+    padding: 10px 8px 12px 8px;
     font-size: 12px;
-    color: var(--text-dim);
+    color: var(--on-surface-var);
+    gap: 12px;
+    flex-wrap: wrap;
   }
+  .footbar .hint{ display:flex; align-items:center; gap:6px; color: var(--on-surface-faint); }
+
   .legend-note{
     font-size: 11.5px;
-    color: var(--text-dim);
-    line-height: 1.5;
-    margin-top: 8px;
+    color: var(--on-surface-var);
+    line-height: 1.55;
+    margin-top: 10px;
     padding-top: 10px;
-    border-top: 1px dashed var(--border);
+    border-top: 1px solid var(--outline-soft);
   }
-  .sp-legend{
-    display:flex; flex-direction:column; gap:6px;
-  }
+  .sp-legend{ display:flex; flex-direction:column; gap:4px; }
   .size-legend{
-    display:flex; align-items:flex-end; gap: 14px; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);
+    display:flex; align-items:flex-end; gap: 14px; margin-top:12px; padding-top:12px; border-top:1px solid var(--outline-soft);
   }
-  .size-legend .sl-item{ display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10.5px; color:var(--text-dim);}
-  .stats-table{ width:100%; border-collapse: collapse; font-size: 11.5px; margin-top: 8px; }
-  .stats-table th{ text-align:right; color:var(--text-dim); font-weight:600; padding: 4px 5px; border-bottom:1px solid var(--border);}
-  .stats-table th:first-child{ text-align:left; }
-  .stats-table td{ text-align:right; padding: 4px 5px; border-bottom:1px solid var(--border); }
-  .stats-table td:first-child{ text-align:left; display:flex; align-items:center; gap:6px; }
-  .stats-table tr:last-child td{ border-bottom:none; }
-  .toggle-row{
-    display:flex; align-items:center; gap:8px; padding:6px 6px; font-size:13px; cursor:pointer;
-  }
-  .toggle-row input{ accent-color: var(--accent); width:14px; height:14px; cursor:pointer;}
+  .size-legend .sl-item{ display:flex; flex-direction:column; align-items:center; gap:5px; font-size:10.5px; color:var(--on-surface-faint); font-family:"Roboto Mono",monospace;}
 
-  /* ---- Data upload section ---- */
+  .stats-table{ width:100%; border-collapse: collapse; font-size: 11.5px; margin-top: 10px; }
+  .stats-table th{ text-align:right; color:var(--on-surface-faint); font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:0.03em; padding: 6px 5px; border-bottom:1px solid var(--outline-soft);}
+  .stats-table th:first-child{ text-align:left; }
+  .stats-table td{ text-align:right; padding: 6px 5px; border-bottom:1px solid var(--outline-soft); font-variant-numeric: tabular-nums; font-family:"Roboto Mono",monospace; }
+  .stats-table td:first-child{ text-align:left; display:flex; align-items:center; gap:6px; font-family: inherit; }
+  .stats-table tr:last-child td{ border-bottom:none; }
+  .stats-table tr:hover td{ background: var(--surface-2); }
+
+  .toggle-row{
+    display:flex; align-items:center; gap:10px; padding:7px 6px; font-size:13px; cursor:pointer;
+    border-radius: var(--radius-sm);
+    transition: background 0.1s var(--ease);
+  }
+  .toggle-row:hover{ background: var(--surface-2); }
+  .toggle-row input{ appearance:none; -webkit-appearance:none; width:16px; height:16px; flex-shrink:0; border: 2px solid var(--on-surface-faint); border-radius: 4px; cursor:pointer; position:relative; transition: background 0.12s var(--ease), border-color 0.12s var(--ease);}
+  .toggle-row input:checked{ background: var(--primary); border-color: var(--primary); }
+  .toggle-row input:checked::after{
+    content:"";
+    position:absolute; left:3px; top:0px;
+    width:4px; height:8px;
+    border: solid var(--on-primary);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  /* ============ Upload panel ============ */
   .upload-panel{
-    background: linear-gradient(180deg,#1b2130,#171a21);
-    border: 1px solid #33405c;
+    background: linear-gradient(165deg, var(--primary-container) -60%, var(--surface-1) 55%);
+    border-color: #2a4a76;
   }
   .upload-drop{
-    border: 1.5px dashed #3a4560;
-    border-radius: 10px;
-    padding: 14px 12px;
+    display:block;
+    border: 1.5px dashed #3d5a86;
+    border-radius: var(--radius-md);
+    padding: 16px 12px;
     text-align: center;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
   }
-  .upload-drop:hover{ border-color: var(--accent); background: rgba(91,140,255,0.06); }
+  .upload-drop:hover{ border-color: var(--primary); background: rgba(138,180,248,0.06); }
   .upload-drop input[type="file"]{ display:none; }
-  .upload-drop .up-icon{ font-size: 20px; margin-bottom:4px; }
-  .upload-drop .up-text{ font-size: 12.5px; color: var(--text-dim); }
-  .upload-drop .up-text b{ color: var(--text); }
+  .upload-drop .up-icon{
+    width:28px; height:28px; margin: 0 auto 8px; color: var(--primary);
+  }
+  .upload-drop .up-icon svg{ width:100%; height:100%; }
+  .upload-drop .up-text{ font-size: 12.5px; color: var(--on-surface-var); line-height:1.5; }
+  .upload-drop .up-text b{ color: var(--on-surface); font-weight:600; }
   .upload-status{
     margin-top: 10px;
     font-size: 12px;
-    padding: 8px 10px;
-    border-radius: 8px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
     display:none;
     line-height:1.5;
   }
-  .upload-status.show{ display:block; }
-  .upload-status.ok{ background: rgba(55,201,119,0.12); color:#8ff0b8; border:1px solid rgba(55,201,119,0.3); }
-  .upload-status.warn{ background: rgba(245,165,36,0.12); color:#ffcf8a; border:1px solid rgba(245,165,36,0.3); }
-  .upload-status.err{ background: rgba(242,73,92,0.12); color:#ff9aa6; border:1px solid rgba(242,73,92,0.3); }
+  .upload-status.show{ display:flex; align-items:flex-start; gap:8px; }
+  .upload-status.ok{ background: rgba(87,211,140,0.12); color:#8ff0b8; border:1px solid rgba(87,211,140,0.28); }
+  .upload-status.warn{ background: rgba(242,184,75,0.12); color:#ffd68a; border:1px solid rgba(242,184,75,0.28); }
+  .upload-status.err{ background: rgba(242,115,92,0.12); color:#ff9d8a; border:1px solid rgba(242,115,92,0.28); }
 
-  /* ---- Date range ---- */
-  .date-range{
-    display:flex; align-items:center; gap:8px;
-  }
-  .date-range .df{
-    flex:1; display:flex; flex-direction:column; gap:4px;
-  }
-  .date-range label{ font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.04em; }
+  /* ============ Date range ============ */
+  .date-range{ display:flex; align-items:center; gap:10px; }
+  .date-range .df{ flex:1; display:flex; flex-direction:column; gap:5px; }
+  .date-range label{ font-size:10.5px; color:var(--on-surface-faint); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
   .date-range input[type="date"]{
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 7px;
-    padding: 6px 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--outline-soft);
+    color: var(--on-surface);
+    border-radius: var(--radius-sm);
+    padding: 7px 9px;
     font-size: 12.5px;
     width: 100%;
     color-scheme: dark;
+    font-family: "Roboto Mono", monospace;
+    transition: border-color 0.12s var(--ease);
   }
-  .date-range input[type="date"]:focus{ outline:1px solid var(--accent); border-color: var(--accent); }
-  .date-reset-btn{
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    font-size: 11px;
-    padding: 5px 9px;
-    border-radius: 6px;
-    cursor:pointer;
-    margin-top: 8px;
-  }
-  .date-reset-btn:hover{ color: var(--text); border-color: #3a4150; }
+  .date-range input[type="date"]:hover{ border-color: #3d434c; }
+  .date-range input[type="date"]:focus{ outline:none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(138,180,248,0.15); }
+  .date-reset-btn{ margin-top: 10px; width:100%; justify-content:center; display:flex; }
 
-  /* ---- Outlier management ---- */
-  .outlier-input-row{
-    display:flex; gap:6px; margin-bottom:10px;
-  }
+  /* ============ Outlier management ============ */
+  .outlier-input-row{ display:flex; gap:8px; margin-bottom:10px; }
   .outlier-input-row input{
     flex:1;
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 7px;
-    padding: 6px 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--outline-soft);
+    color: var(--on-surface);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
     font-size: 12.5px;
     text-transform: uppercase;
+    font-family: "Roboto Mono", monospace;
+    transition: border-color 0.12s var(--ease);
   }
-  .outlier-input-row input:focus{ outline:1px solid var(--accent); border-color: var(--accent); }
+  .outlier-input-row input:hover{ border-color: #3d434c; }
+  .outlier-input-row input:focus{ outline:none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(138,180,248,0.15); }
   .outlier-input-row button{
-    background: var(--red);
+    background: var(--error);
     border: none;
-    color: white;
+    color: #2c0b06;
     font-size: 12px;
     font-weight:600;
-    padding: 6px 12px;
-    border-radius: 7px;
+    padding: 7px 14px;
+    border-radius: var(--radius-pill);
     cursor:pointer;
     white-space:nowrap;
+    transition: filter 0.12s var(--ease), transform 0.08s var(--ease);
   }
-  .outlier-input-row button:hover{ filter: brightness(1.1); }
-  .outlier-hint{
-    font-size: 11px;
-    color: var(--text-dim);
-    margin: -4px 0 10px 0;
-  }
-  .outlier-list{
-    display:flex; flex-direction:column; gap:4px;
-    max-height: 220px;
-    overflow-y:auto;
-  }
+  .outlier-input-row button:hover{ filter: brightness(1.08); }
+  .outlier-input-row button:active{ transform: scale(0.97); }
+  .outlier-hint{ font-size: 11px; color: var(--on-surface-faint); margin: -4px 0 12px 0; line-height:1.5; }
+  .outlier-list{ display:flex; flex-direction:column; gap:5px; max-height: 220px; overflow-y:auto; }
   .outlier-item{
     display:flex; align-items:center; gap:8px;
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    padding: 6px 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--outline-soft);
+    border-radius: var(--radius-sm);
+    padding: 7px 9px;
     font-size: 12.5px;
   }
-  .outlier-item .oi-key{ flex:1; font-weight:600; color: var(--accent); }
-  .outlier-item .oi-meta{ color: var(--text-dim); font-size: 11px; }
+  .outlier-item .oi-key{ flex:1; font-weight:600; color: var(--primary); font-family:"Roboto Mono",monospace; }
+  .outlier-item .oi-meta{ color: var(--on-surface-faint); font-size: 11px; font-family:"Roboto Mono",monospace; }
   .outlier-item .oi-remove{
     background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    width: 20px; height:20px;
-    border-radius: 5px;
+    border: 1px solid var(--outline-soft);
+    color: var(--on-surface-faint);
+    width: 22px; height:22px;
+    border-radius: 50%;
     cursor:pointer;
-    font-size: 12px;
+    font-size: 13px;
     line-height:1;
     flex-shrink:0;
+    transition: color 0.12s var(--ease), border-color 0.12s var(--ease), background 0.12s var(--ease);
   }
-  .outlier-item .oi-remove:hover{ color: var(--red); border-color: var(--red); }
-  .outlier-empty{ font-size:12px; color:var(--text-dim); font-style:italic; }
-  .pt-hidden-hint{
-    font-size: 11px;
-    color: var(--text-dim);
-    margin-top: 4px;
+  .outlier-item .oi-remove:hover{ color: var(--error); border-color: var(--error); background: rgba(242,115,92,0.1); }
+  .outlier-empty{ font-size:12px; color:var(--on-surface-faint); font-style:italic; padding: 6px 2px; }
+
+  /* ============ Misc utility ============ */
+  .kbd{
+    font-family:"Roboto Mono",monospace;
+    background: var(--surface-2);
+    border: 1px solid var(--outline-soft);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 10.5px;
+    color: var(--on-surface-var);
   }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Lead Time dostarczania — projekt FSI</h1>
-  <p>Scatterplot: data ukończenia zgłoszenia (oś X) vs. czas dostarczenia — Lead Time w dniach (oś Y). Kolor = zakres Story Points, kształt = zespół, wielkość = wartość Story Points. Linie łączą Epik → Story → Sub-task.</p>
+  <div class="header-text">
+    <h1>Lead Time dostarczania — projekt FSI</h1>
+    <p>Scatterplot: data ukończenia zgłoszenia (oś X) vs. czas dostarczenia — Lead Time w dniach (oś Y). Kolor = zakres Story Points, kształt = zespół, wielkość = wartość Story Points. Linie łączą Epik → Story → Sub-task.</p>
+  </div>
+  <div class="header-badges">
+    <span class="badge"><span class="dot"></span>Dane na żywo</span>
+  </div>
 </header>
 
 <div class="layout">
   <div class="sidebar">
 
     <div class="panel upload-panel">
-      <h2>Czy masz nowsze dane?</h2>
+      <h2>
+        <span class="h2-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0-12l-4 4m4-4l4 4M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        Czy masz nowsze dane?
+      </h2>
       <label class="upload-drop" id="uploadDrop">
-        <div class="up-icon">⬆️</div>
+        <div class="up-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0-12l-4 4m4-4l4 4M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="up-text"><b>Wgraj plik .xlsx / .xls</b><br>tylko nowe zadania (po Issue key) zostaną dodane</div>
         <input type="file" id="fileInput" accept=".xlsx,.xls">
       </label>
@@ -341,7 +514,10 @@
     </div>
 
     <div class="panel">
-      <h2>Zakres dat (data ukończenia)</h2>
+      <h2>
+        <span class="h2-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+        Zakres dat (data ukończenia)
+      </h2>
       <div class="date-range">
         <div class="df">
           <label for="dateFrom">Od</label>
@@ -352,11 +528,14 @@
           <input type="date" id="dateTo">
         </div>
       </div>
-      <button class="date-reset-btn" id="dateResetBtn">Wyczyść zakres (pokaż wszystko)</button>
+      <button class="btn date-reset-btn" id="dateResetBtn">Wyczyść zakres (pokaż wszystko)</button>
     </div>
 
     <div class="panel">
-      <h2>Zarządzanie anomaliami</h2>
+      <h2>
+        <span class="h2-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M4.93 4.93l14.14 14.14M12 3a9 9 0 100 18 9 9 0 000-18z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        Zarządzanie anomaliami
+      </h2>
       <div class="outlier-input-row">
         <input type="text" id="outlierKeyInput" placeholder="np. FSI-1234">
         <button id="outlierHideBtn">Ukryj</button>
@@ -393,8 +572,8 @@
     <div class="panel">
       <h2>Legenda — kształt (Zespół)</h2>
       <div class="row-actions">
-        <button id="teamAll">Zaznacz wszystkie</button>
-        <button id="teamNone">Wyczyść</button>
+        <button class="btn" id="teamAll">Zaznacz wszystkie</button>
+        <button class="btn" id="teamNone">Wyczyść</button>
       </div>
       <div class="check-list" id="teamList"></div>
     </div>
@@ -407,8 +586,8 @@
     <div class="panel">
       <h2>Filtr — Typ zadania</h2>
       <div class="row-actions">
-        <button id="typeAll">Zaznacz wszystkie</button>
-        <button id="typeNone">Wyczyść</button>
+        <button class="btn" id="typeAll">Zaznacz wszystkie</button>
+        <button class="btn" id="typeNone">Wyczyść</button>
       </div>
       <div class="check-list" id="typeList"></div>
       <label class="toggle-row">
@@ -419,10 +598,10 @@
 
     <div class="panel">
       <h2>Linie statystyczne</h2>
-      <div class="stat-line"><input type="checkbox" data-stat="p50" checked><span class="dash" style="color:#5b8cff"></span><span>Mediana (P50)</span></div>
-      <div class="stat-line"><input type="checkbox" data-stat="p85"><span class="dash" style="color:#f5a524"></span><span>Percentyl 85</span></div>
-      <div class="stat-line"><input type="checkbox" data-stat="p95"><span class="dash" style="color:#f2495c"></span><span>Percentyl 95</span></div>
-      <div class="stat-line"><input type="checkbox" data-stat="mean"><span class="dash" style="color:#37c977; border-top-style:solid;"></span><span>Średnia</span></div>
+      <label class="stat-line" style="color:#8ab4f8"><input type="checkbox" data-stat="p50" checked><span class="dash"></span><span class="lbl">Mediana (P50)</span></label>
+      <label class="stat-line" style="color:#f2b84b"><input type="checkbox" data-stat="p85"><span class="dash"></span><span class="lbl">Percentyl 85</span></label>
+      <label class="stat-line" style="color:#f2735c"><input type="checkbox" data-stat="p95"><span class="dash"></span><span class="lbl">Percentyl 95</span></label>
+      <label class="stat-line" style="color:#57d38c"><input type="checkbox" data-stat="mean"><span class="dash" style="border-top-style:solid;"></span><span class="lbl">Średnia</span></label>
       <div class="legend-note">Linie liczone są osobno dla każdego zaznaczonego zespołu, na podstawie aktualnie widocznych punktów tego zespołu.</div>
       <table class="stats-table" id="statsTable"></table>
     </div>
@@ -435,7 +614,7 @@
     </div>
     <div class="footbar">
       <span id="pointCount"></span>
-      <span>Najedź, aby zobaczyć szczegóły. Kliknij punkt, aby ukryć go jako anomalię.</span>
+      <span class="hint">Najedź, aby zobaczyć szczegóły &nbsp;·&nbsp; kliknij punkt, aby ukryć go jako anomalię</span>
     </div>
   </div>
 </div>
@@ -458,11 +637,11 @@ function spBucket(sp){
   return 'other'; // 0 or 4
 }
 const SP_COLORS = {
-  low:  '#37c977',
-  mid:  '#f5a524',
-  high: '#f2495c',
-  other:'#b47ef0',
-  brak: '#6b7280'
+  low:  '#57d38c',
+  mid:  '#f2b84b',
+  high: '#f2735c',
+  other:'#c58af9',
+  brak: '#7c828b'
 };
 const SP_LABELS = {
   low: 'Story Points 1–3',
@@ -501,10 +680,14 @@ const byId = {};
 RAW.forEach(d => { byId[d.id] = d; });
 
 // ---------- State ----------
+// Default view: only the first (highest-volume) team and only "Story" issues are
+// shown on load, so the chart opens focused rather than showing every series at once.
+const DEFAULT_TEAM = teams.length ? [teams[0]] : [];
+const DEFAULT_TYPE = types.includes('Story') ? ['Story'] : (types.length ? [types[0]] : []);
 const state = {
-  teamsOn: new Set(teams),
+  teamsOn: new Set(DEFAULT_TEAM),
   spOn: new Set(['low','mid','high','other','brak']),
-  typesOn: new Set(types),
+  typesOn: new Set(DEFAULT_TYPE),
   stats: new Set(['p50']),
   showLinks: true,
   statusOn: new Set(['completed']),
@@ -894,8 +1077,9 @@ teams.forEach(t=>{
   const item = document.createElement('label');
   item.className = 'check-item';
   const iconHTML = svgIcon.outerHTML;
+  const isChecked = state.teamsOn.has(t) ? 'checked' : '';
   item.innerHTML = `
-    <input type="checkbox" checked data-team="${t}">
+    <input type="checkbox" ${isChecked} data-team="${t}">
     ${iconHTML}
     <span class="label">${t}</span>
     <span class="count">${teamCounts[t]}</span>
@@ -947,8 +1131,9 @@ const typeList = document.getElementById('typeList');
 types.forEach(t=>{
   const item = document.createElement('label');
   item.className = 'check-item';
+  const isChecked = state.typesOn.has(t) ? 'checked' : '';
   item.innerHTML = `
-    <input type="checkbox" checked data-type="${t}">
+    <input type="checkbox" ${isChecked} data-type="${t}">
     <span class="label">${t}</span>
     <span class="count">${typeCounts[t]}</span>
   `;
